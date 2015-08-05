@@ -2,7 +2,7 @@
 	
 	pcntl_signal( SIGCHLD, SIG_IGN );
 	
-	$l_ip = '192.168.31.37';
+	$l_ip = '192.168.31.10';
 	$l_port = 2015;
 	
 	$sock = socket_create( AF_INET, SOCK_STREAM, 0 );
