@@ -2,8 +2,8 @@
 	
 	pcntl_signal( SIGCHLD, SIG_IGN );
 	
-	$l_ip = '192.168.31.10';
-	$l_port = 2015;
+	$l_ip = '0.0.0.0';
+	$l_port = 2023;
 	
 	$sock = socket_create( AF_INET, SOCK_STREAM, 0 );
 	socket_set_option( $sock, SOL_SOCKET, SO_RCVTIMEO, array("sec"=>10, "usec"=>0 ) );

@@ -4,7 +4,8 @@
 	
 	pcntl_signal( SIGCHLD, SIG_IGN );
 	
-	$l_ip = '192.168.31.5';
+	//$l_ip = '192.168.31.18';
+	$l_ip = '10.71.29.11';
 	$l_port = 2023;				
 		
 	$sock = socket_create( AF_INET, SOCK_STREAM, 0 );
@@ -25,14 +26,14 @@
 	}
 	
 	echo "order_send is running!\r\n";
-	$loop = 1000;
+	$loop = 3000;
 	$dt = array();
 	$i = 0;
 	for($i=0;$i<$loop;$i++) {
 		if( mt_rand(0,1)==0 )
-			$buff = "[".time().",OPEN,201]";
+			$buff = "[".time().",OPEN,106]";
 		else
-			$buff = "[".time().",CLOSE,201]";;
+			$buff = "[".time().",CLOSE,106]";
 		
 		socket_write( $sock, $buff );
 		$t1 = time();

@@ -4,10 +4,14 @@
 	
 	pcntl_signal( SIGCHLD, SIG_IGN );
 	
-	//$l_ip = '192.168.31.5';
-	$l_ip = '10.71.29.11';
+	$l_ip = '192.168.31.26';
+	//$l_ip = '127.0.0.1';
 	$l_port = 2023;
-						
+	
+	$ops = getopt( "i:" );
+	$ID = $ops['i'];
+	$STA = '';
+	
 	while(TRUE) {
 		
 		$sock = socket_create( AF_INET, SOCK_STREAM, 0 );
@@ -16,7 +20,6 @@
 		socket_set_option( $sock, SOL_SOCKET, SO_REUSEADDR, 1 );
 		
 		if( socket_bind($sock, 0, 0)===FALSE ) {       		// 绑定 ip、port
-			//error_log( "water-M socket_bind failed!\r\n", 3, '/tmp/water-M.log' );
 			exit;
 		}
 	
@@ -29,13 +32,15 @@
 		
 		echo "hard_ware is running!\r\n";
 		
-		$buff = "[001,0,0000c]";
+		$buff = "[$ID,0,0000c]";
 		socket_write( $sock, $buff );
 		
 		$conns = array( $sock );
 		
 		$jump_heart_t = 0;
-					
+		$send_jump_num = 0;
+		$if_break_conn = time();
+		
 		while(TRUE) {
 			$read = $conns;
 			$sele_res = socket_select( $read, $write=NULL, $except=NULL, 10 );
@@ -55,15 +60,24 @@
 						strtok( $mid_data , "[,] \r\n" );
 						$op_id = strtok ( "[,] \r\n" );
 						
-						if( $op_id==2 ) {
-							$str = strtok ( "[,] \r\n" );
-		
-							$buff = "[001,3,$str]";
-							echo "recv:  ".time()."    $data     send: $buff\r\n";
-							socket_write( $read[0], $buff );
+						switch( $op_id ) {
+							case '1':
+								$STA = strtok ( "[,] \r\n" );
+								$buff = '';
+								break;
+								
+							case '2':
+								$STA = strtok ( "[,] \r\n" );
+								$buff = "[$ID,3,$STA]";
+								socket_write( $read[0], $buff );
+								break;
+								
+							default:
+								break;
+							
 						}
-						else
-							echo "recv:  ".time()."   $data\r\n";
+
+						echo "recv:  ".time()."    $data     send: $buff\r\n";
 					}
 					else {
 						echo "server connection_aborted\r\n";
@@ -77,7 +91,9 @@
 			// 超时
 			// 发送心跳
 			if ( (time()-$jump_heart_t)>=10 ) {
-				$buff = "[001,6,0000c]";
+				
+				$send_jump_num ++;
+				$buff = "[$ID,6,$STA]";
 				echo "\t\t\t\t\tsend heart-jump: $buff \r\n";
 				$mid_res = socket_write( $sock, $buff );
 				$jump_heart_t = time();
@@ -85,8 +101,29 @@
 					socket_close( $sock );
 					break;
 				}
+				
+				// send inquiry order 
+				if( $send_jump_num>=10 ) {
+					$send_jump_num = 0;
+					$buff = "[$ID,0,$STA]";
+					echo "\t\t\t\t\tsend inquiry-order: $buff \r\n";
+					$mid_res = socket_write( $sock, $buff );
+					if( $mid_res===FALSE ) {
+						socket_close( $sock );
+						break;
+					}
+				}
 			}
-
+			
+			// 20 mins 后，中断连接
+			if( (time()-$if_break_conn)>=5*60 ) {
+				$if_break_conn = time();
+				socket_close( $sock );
+				$break_last_sec = rand( 60, 180 );
+				echo "client break connection $break_last_sec secs\r\n";
+				sleep( $break_last_sec );
+				break;
+			}
 		}
 		
 	}
